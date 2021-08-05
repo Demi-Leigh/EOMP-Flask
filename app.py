@@ -1,6 +1,6 @@
 import hmac
 import sqlite3
-
+from flask_mail import Mail, Message
 from flask import Flask, request, jsonify
 from flask_jwt import JWT, jwt_required, current_identity
 from flask_cors import CORS
@@ -72,6 +72,13 @@ app = Flask(__name__)
 app.debug = True
 app.config['SECRET_KEY'] = 'super-secret'
 CORS(app)
+app.config['MAIL_SERVER'] = 'smtp.gmail.com'
+app.config['MAIL_PORT'] = 465
+app.config['MAIL_USERNAME'] = 'demijay2323@gmail.com'
+app.config['MAIL_PASSWORD'] = '1a2a3a4a5a6a7a8a'
+app.config['MAIL_USE_TLS'] = False
+app.config['MAIL_USE_SSL'] = True
+mail = Mail(app)
 
 jwt = JWT(app, authenticate, identity)
 
@@ -91,17 +98,23 @@ def user_registration():
         full_name = request.form['full_name']
         username = request.form['username']
         password = request.form['password']
+        email = request.form['email']
 
         with sqlite3.connect("point_of_sale.db") as conn:
             cursor = conn.cursor()
             cursor.execute("INSERT INTO users("
                            "full_name,"
                            "username,"
-                           "password) VALUES(?, ?, ?)", (full_name, username, password))
+                           "password,"
+                           "email) VALUES(?, ?, ?, ?)", (full_name, username, password, email))
             conn.commit()
             response["message"] = "success"
             response["status_code"] = 201
-        return response
+            if response["status_code"] == 201:
+                msg = Message('WELCOME', sender='demijay2323@gmail.com', recipients=[email])
+                msg.body = "You have successfully registered"
+                mail.send(msg)
+                return "Send email"
 
 
 @app.route('/add-product/', methods=["POST"])
