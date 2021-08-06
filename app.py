@@ -4,6 +4,7 @@ from flask_mail import Mail, Message
 from flask import Flask, request, jsonify
 from flask_jwt import JWT, jwt_required, current_identity
 from flask_cors import CORS
+from datetime import timedelta
 
 
 class UserInfo(object):
@@ -13,6 +14,7 @@ class UserInfo(object):
         self.password = password
 
 
+# Creating a database for users details
 def user_table():
     with sqlite3.connect('point_of_sale.db') as conn:
         cursor = conn.cursor()
@@ -20,11 +22,13 @@ def user_table():
                        "user_id INTEGER PRIMARY KEY AUTOINCREMENT,"
                        "full_name TEXT NOT NULL,"
                        "username TEXT NOT NULL,"
-                       "password TEXT NOT NULL)")
+                       "password TEXT NOT NULL,"
+                       "email TEXT NOT NULL)")
 
         print("user table created successfully")
 
 
+# To select users details from the user table
 def fetch_users():
     with sqlite3.connect('point_of_sale.db') as conn:
         cursor = conn.cursor()
@@ -37,6 +41,7 @@ def fetch_users():
     return user_data
 
 
+# Creating a table for the products
 def product_table():
     with sqlite3.connect('point_of_sale.db') as conn:
         conn.execute("CREATE TABLE IF NOT EXISTS products (id INTEGER PRIMARY KEY AUTOINCREMENT,"
@@ -47,6 +52,7 @@ def product_table():
     print("product table created successfully.")
 
 
+# Calling the functions
 user_table()
 product_table()
 
@@ -72,6 +78,7 @@ app = Flask(__name__)
 app.debug = True
 app.config['SECRET_KEY'] = 'super-secret'
 CORS(app)
+app.config['JWT_EXPIRATION_DELTA'] = timedelta(seconds=86400)
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'
 app.config['MAIL_PORT'] = 465
 app.config['MAIL_USERNAME'] = 'demijay2323@gmail.com'
@@ -89,6 +96,7 @@ def protected():
     return '%s' % current_identity
 
 
+# Creating a form for users to register and then send email after.
 @app.route('/user-registration/', methods=["POST"])
 def user_registration():
     response = {}
@@ -117,6 +125,7 @@ def user_registration():
                 return "Send email"
 
 
+# Code to add new product to table
 @app.route('/add-product/', methods=["POST"])
 @jwt_required()
 def add_product():
@@ -141,6 +150,7 @@ def add_product():
         return response
 
 
+# code to view all products in table
 @app.route('/view-products/', methods=["GET"])
 def view_products():
     response = {}
@@ -155,6 +165,7 @@ def view_products():
     return response
 
 
+# Code to delete products from table
 @app.route("/delete-product/<int:id>/")
 @jwt_required()
 def delete_product(id):
@@ -168,6 +179,7 @@ def delete_product(id):
     return response
 
 
+# Code to edit products
 @app.route('/edit-product/<int:id>/', methods=["PUT"])
 @jwt_required()
 def edit_product(id):
@@ -222,6 +234,7 @@ def edit_product(id):
     return response
 
 
+# To view a specific product in the table
 @app.route('/view-product/<int:id>/', methods=["GET"])
 def view_product(id):
     response = {}
