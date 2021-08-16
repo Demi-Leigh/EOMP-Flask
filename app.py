@@ -45,6 +45,7 @@ def fetch_users():
 def product_table():
     with sqlite3.connect('point_of_sale.db') as conn:
         conn.execute("CREATE TABLE IF NOT EXISTS products (id INTEGER PRIMARY KEY AUTOINCREMENT,"
+                     "image_url TEXT NOT NULL,"
                      "name TEXT NOT NULL,"
                      "price TEXT NOT NULL,"
                      "description TEXT NOT NULL,"
@@ -103,10 +104,10 @@ def user_registration():
 
     if request.method == "POST":
 
-        full_name = request.form['full_name']
-        username = request.form['username']
-        password = request.form['password']
-        email = request.form['email']
+        full_name = request.json['full_name']
+        username = request.json['username']
+        password = request.json['password']
+        email = request.json['email']
 
         with sqlite3.connect("point_of_sale.db") as conn:
             cursor = conn.cursor()
@@ -132,18 +133,20 @@ def add_product():
     response = {}
 
     if request.method == "POST":
-        name = request.form['name']
-        price = request.form['price']
-        description = request.form['description']
-        type = request.form['type']
+        image_url = request.json['image_url']
+        name = request.json['name']
+        price = request.json['price']
+        description = request.json['description']
+        type = request.json['type']
 
         with sqlite3.connect('point_of_sale.db') as conn:
             cursor = conn.cursor()
             cursor.execute("INSERT INTO products("
+                           "image_url,"
                            "name,"
                            "price,"
                            "description,"
-                           "type) VALUES (?, ?, ?,?)", (name, price, description, type))
+                           "type) VALUES (?,?,?,?,?)", (image_url, name, price, description, type))
             conn.commit()
             response["status_code"] = 201
             response['description'] = "product added successfully"
@@ -189,6 +192,15 @@ def edit_product(id):
         with sqlite3.connect('point_of_sale.db') as conn:
             incoming_data = dict(request.json)
             put_data = {}
+
+            if incoming_data.get("image_url") is not None:
+                put_data["image_url"] = incoming_data.get("image_url")
+                with sqlite3.connect('point_of_sale.db') as conn:
+                    cursor = conn.cursor()
+                    cursor.execute("UPDATE products SET image_url =? WHERE id=?", (put_data["image_url"], id))
+                    conn.commit()
+                    response['message'] = "Updated successfully"
+                    response['status_code'] = 200
 
             if incoming_data.get("name") is not None:
                 put_data["name"] = incoming_data.get("name")
